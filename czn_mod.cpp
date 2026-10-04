@@ -638,14 +638,26 @@ static void pre_app(void *, void *) {}
 static void pre_server(void *, void *) {}
 static void post_server(void *, const void *) {}
 
-static void post_app(void *, const void *) {
+static void *detect_and_launch(void *) {
     char pkg[128];
-    if (read_cmdline(pkg, sizeof(pkg)) != 0) return;
-    if (strcmp(pkg, TARGET_PKG) != 0) return;   // every other app: zero footprint
-    LOGI("target matched");
-    status_write("target matched");
+    for (int i = 0; i < 30; i++) {
+        if (read_file_head("/proc/self/cmdline", pkg, sizeof(pkg)) > 0) {
+            if (strcmp(pkg, TARGET_PKG) == 0) {
+                LOGI("target matched (delayed %d ms)", i * 100);
+                status_write("target matched");
+                worker_main(NULL);
+                return NULL;
+            }
+        }
+        usleep(100 * 1000);
+    }
+    return NULL;
+}
+
+static void post_app(void *, const void *) {
+    LOGI("[DEBUG] post_app hook triggered!");
     pthread_t tid;
-    if (pthread_create(&tid, NULL, worker_main, NULL) == 0)
+    if (pthread_create(&tid, NULL, detect_and_launch, NULL) == 0)
         pthread_detach(tid);
 }
 
