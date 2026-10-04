@@ -1,0 +1,6 @@
+id=czn_speed
+name=CZN Speed
+version=1.0
+versionCode=1
+author=yporoc
+description=In-game speed control overlay for CHAOS ZERO NIGHTMARE. Injects a JS layer into the game's own V8 context at runtime; the official APK is never modified. Requires Zygisk.
