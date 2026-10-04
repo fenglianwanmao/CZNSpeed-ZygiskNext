@@ -19,6 +19,7 @@ jobs:
           python-version: '3.10'
 
       - name: Set up Android NDK
+        id: setup-ndk
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: r26b
@@ -26,7 +27,7 @@ jobs:
 
       - name: Run Build Script
         env:
-          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path || env.ANDROID_NDK_LATEST_HOME }}
         run: |
           chmod +x build.sh
           ./build.sh
