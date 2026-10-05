@@ -655,7 +655,28 @@ static void *detect_and_launch(void *) {
 }
 
 static void post_app(void *, const void *) {
-    LOGI("[DEBUG] post_app hook triggered!");
+    char pkg[128] = {0};
+    int len = read_file_head("/proc/self/cmdline", pkg, sizeof(pkg));
+    
+    if (len > 0) {
+        // 1. 如果 cmdline 已经是目标游戏，直接起线程注入
+        if (strcmp(pkg, TARGET_PKG) == 0) {
+            LOGI("target matched immediately in post_app");
+            status_write("target matched");
+            pthread_t tid;
+            if (pthread_create(&tid, NULL, worker_main, NULL) == 0)
+                pthread_detach(tid);
+            return;
+        }
+
+        // 2. 如果 cmdline 已经明确变成其他普通应用（不是 zygote / 孤儿进程），直接退出，绝不起线程！
+        if (strstr(pkg, "zygote") == NULL && pkg[0] != '\0') {
+            // 是雷神或其他日常 App，完全不碰，立刻返回
+            return;
+        }
+    }
+
+    // 3. 只有在 Android 15/16 时序未刷新（依然叫 zygote 或为空）时，才启动短暂的延迟重试线程
     pthread_t tid;
     if (pthread_create(&tid, NULL, detect_and_launch, NULL) == 0)
         pthread_detach(tid);
